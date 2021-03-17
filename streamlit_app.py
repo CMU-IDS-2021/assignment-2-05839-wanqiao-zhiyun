@@ -55,9 +55,17 @@ def make_bar_plot_multi_continent(continent_names, var):
 #     year_counts = con_df.groupby('year')['suicides_no'].sum().to_frame()
 #     year_counts = year_counts.reset_index()
 #     return year_counts
+st.header('Compare across countries')
 
-country_names = st.multiselect('Select countries', ten_yeat_plus_country, default = ['Albania','Argentina','Ukraine','Thailand'])
-vis_var = st.selectbox('Do you want to visualize raw or averaged suicide counts',['raw','average'])
+country_names = st.multiselect('Select countries', ten_yeat_plus_country, default = ['Denmark','Italy','Kazakhstan'])
+cont_attributes = [ 'sex', 'age', 'generation']
+
+
+col1, col2 = st.beta_columns(2)
+with col1:
+    vis_var = st.selectbox('Do you want to visualize raw or averaged suicide counts',['raw','average'])
+with col2:  
+    var1 = st.selectbox('Select a continous attribute to visualize', ['population', 'gdp_per_capita'])
 
 
 
@@ -65,7 +73,7 @@ vis_var = st.selectbox('Do you want to visualize raw or averaged suicide counts'
 def make_line_plot_df_multi_country(country_names, mode):
     con_df = df_filtered.loc[df_filtered['country'].isin(country_names)]
     counts_df_list = []
-    res_var = 'suicides_no' if mode == 'raw' else 'suicides/100k pop'
+    res_var = 'suicides_no' if mode == 'raw' else 'suicides/100k'
     for c in country_names:
           year_counts = con_df.loc[con_df['country'] ==c].groupby('year')[res_var].sum().to_frame()
           year_counts = year_counts.reset_index()
@@ -95,7 +103,7 @@ def make_grouped_bar_plot_df_discrete(country_names, discrete_attr):
 
 def make_corr_plot_df(country_name):
     con_df = df_filtered.loc[df_filtered['country']==country_name]
-    col_names = ['population', 'gdp_per_capita ($)', 'suicides_no', 'suicides/100k pop']
+    col_names = ['population', 'gdp_per_capita', 'suicides_no', 'suicides/100k']
     corr_mtx = con_df[col_names].corr()
     res_list= []
     for r in range(len(corr_mtx.index)):
@@ -122,23 +130,36 @@ if len(country_names) >=1:
     else:
         line_plot = alt.Chart(multi_country_lines).mark_line().encode(
         x = 'year',
-        y = 'suicides/100k pop',
+        y = 'suicides/100k',
         color = 'country',
         strokeDash = 'country')
 
-    st.altair_chart(line_plot)
+    # st.altair_chart(line_plot)
 else:
     st.write("Please select at least on country to begin")
 
+
+
+### --------------------------- Line plot for continuous variables of multiple countries --------
+ctry_line_plot_df = make_line_plot_df_cont_attributes(country_names, var1)
+ctry_line_plot = alt.Chart(ctry_line_plot_df).mark_line().encode(
+    x = 'year',
+    y = var1,
+    color = 'country')
+
+# st.altair_chart(ctry_line_plot)
+# st.altair_chart(multi_bar_chart)
+st.altair_chart(line_plot | ctry_line_plot) 
 
 
 
 ###------------------------------ Bar plot for multiple countries -----------------------
 
 # country_name = st.selectbox('Select country', ten_yeat_plus_country)
-attributes = [ 'sex', 'age', 'generation']
-var = st.selectbox('Select attribute', attributes)
 
+col3, col4 = st.beta_columns(2)
+with col3:
+    var = st.selectbox('Select attribute', cont_attributes)
 multi_bar_df = make_bar_plot_df_multi_country(country_names, var)
 multi_bar_chart = alt.Chart(multi_bar_df).mark_bar(opacity =0.3).encode(
     x = var,
@@ -146,18 +167,40 @@ multi_bar_chart = alt.Chart(multi_bar_df).mark_bar(opacity =0.3).encode(
     color = 'country')
 
 
-st.altair_chart(multi_bar_chart)
 
 
-### --------------------------- Line plot for continuous variables of multiple countries --------
-var1 = st.selectbox('Select a continous attribute to visualize', ['population', 'gdp_per_capita ($)'])
-ctry_line_plot_df = make_line_plot_df_cont_attributes(country_names, var1)
-ctry_line_plot = alt.Chart(ctry_line_plot_df).mark_line().encode(
-    x = 'year',
-    y = var1,
-    color = 'country')
 
-st.altair_chart(ctry_line_plot)
+### ------------------- Grouped bar plot of a single discrete variable for multiple countries --------
+
+
+
+
+grouped_bar_df = make_grouped_bar_plot_df_discrete(country_names, var)
+with col4:
+    slider = alt.binding_range(min =grouped_bar_df['year'].min(), max=grouped_bar_df['year'].max(),step=1)
+# slider = alt.binding_range(min =grouped_bar_df['year'].min(), max=grouped_bar_df['year'].max(),step=1)
+select_year = alt.selection_single(name = 'year',
+                                    fields = ['year'],
+                                    bind = slider, init={'year':1997})
+
+# select_year = st.slider('Select year', min_value = int(grouped_bar_df['year'].min()),
+#                         max_value = int(grouped_bar_df['year'].max()), value = int(1997), step = 1)
+
+grouped_bar_plot = alt.Chart(grouped_bar_df).mark_bar().encode(
+    x = alt.X('country:N'),
+    y = alt.Y('suicides_no:Q'),
+    color = alt.Color('country:N'),
+    column = var
+).add_selection(
+    select_year
+).transform_filter(
+    select_year
+)
+
+
+# st.altair_chart(grouped_bar_plot)   
+st.altair_chart(multi_bar_chart| grouped_bar_plot)
+
 
 ### ---------------------------Bar plot for discrete variables of multiple continents -------- 
 ctnt_line_plot_df = make_bar_plot_multi_continent(continent_names,var)
@@ -166,8 +209,10 @@ ctnt_line_plot = alt.Chart(ctnt_line_plot_df).mark_bar().encode(
     y = 'suicides_no',
     color = 'continent')
 
-st.altair_chart(ctnt_line_plot)
+# st.altair_chart(ctnt_line_plot)
 
+
+st.header('Inspect a single country')
 ### -------------------- Correlation heatmap of continous variables for a single country --------
 corr_country = st.selectbox('Select country', ten_yeat_plus_country)
 corr_plot_df = make_corr_plot_df(corr_country)
@@ -180,31 +225,9 @@ corr_plot = alt.Chart(corr_plot_df).mark_rect().encode(
 st.altair_chart(corr_plot)
 
 
-### ------------------- Grouped bar plot of a single discrete variable for multiple countries --------
-grouped_bar_df = make_grouped_bar_plot_df_discrete(country_names, 'sex')
+ 
 
-slider = alt.binding_range(min =grouped_bar_df['year'].min(), max=grouped_bar_df['year'].max(),step=1)
-select_year = alt.selection_single(name = 'year',
-                                    fields = ['year'],
-                                    bind = slider, init={'year':1997})
-
-# select_year = st.slider('Select year', min_value = int(grouped_bar_df['year'].min()),
-#                         max_value = int(grouped_bar_df['year'].max()), value = int(1997), step = 1)
-
-grouped_bar_plot = alt.Chart(grouped_bar_df).mark_bar().encode(
-    x = alt.X('country:N'),
-    y = alt.Y('suicides_no:Q'),
-    color = alt.Color('country:N'),
-    column = 'sex'
-).add_selection(
-    select_year
-).transform_filter(
-    select_year
-)
-
-st.altair_chart(grouped_bar_plot)    
-
-### ----------------------- Pyramid -----------------------------------
+### ----------------------- Pyramid plot-----------------------------------
 # source = data.population()
 source = df_filtered[df_filtered['country']==corr_country][['country','year','age','sex','suicides_no']]
 
@@ -243,3 +266,7 @@ right = base.transform_filter(
 
 pyramid_plot = alt.concat(left, middle, right, spacing=5)
 st.altair_chart(pyramid_plot)
+
+
+######################## Plots display #########################
+

@@ -1,4 +1,4 @@
-# Project name
+# Suicide rate around the world
 
 ![A screenshot of your application. Could be a GIF.](screenshot.png)
 
@@ -8,7 +8,7 @@ TODO: Short abstract describing the main goals and how you achieved them.
 
 ## Project Goals
 
-TODO: **A clear description of the goals of your project.** Describe the question that you are enabling a user to answer. The question should be compelling and the solution should be focused on helping users achieve their goals. 
+According to World Health Organization, around 800,000 people die from suicide globally each year. Suicide is one of the leading causes of death in US and the number has been increasing over years. Our project aims to present the trend of suicide rate changes over time and investigate the suicide rate difference among varied groups including gender, age, GDP and Human Development Index.
 
 ## Design
 

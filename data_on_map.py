@@ -89,7 +89,7 @@ fg_year_count = (
     alt.Chart(countries)
     .mark_geoshape(stroke="black", strokeWidth=0.15)
     .encode(
-        color=alt.Color("year-count:Q",scale=alt.Scale(scheme="greens")),
+        color=alt.Color("year-count:Q",scale=alt.Scale(scheme="purpleblue")),
         tooltip=[alt.Tooltip("country:N", title="Country"),
                  alt.Tooltip("year-count:Q", title="Data available in years")]
     ).transform_lookup(

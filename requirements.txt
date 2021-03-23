@@ -1,3 +1,6 @@
 streamlit
 pandas
 altair
+numpy
+vega_datasets
+re
